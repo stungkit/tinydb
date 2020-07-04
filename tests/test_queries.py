@@ -1,4 +1,4 @@
-import pytest
+import pytest  # type: ignore
 import re
 from tinydb.queries import Query, where
 
@@ -8,16 +8,16 @@ def test_no_path():
         _ = Query() == 2
 
 
-def test_path_only():
-    query = Query()['value']
-    assert query == where('value')
+def test_path_exists():
+    query = Query()['value'].exists()
+    assert query == where('value').exists()
     assert query({'value': 1})
     assert not query({'something': 1})
     assert hash(query)
     assert hash(query) != hash(where('asd'))
 
-    query = Query()['value']['val']
-    assert query == where('value')['val']
+    query = Query()['value']['val'].exists()
+    assert query == where('value')['val'].exists()
     assert query({'value': {'val': 2}})
     assert not query({'value': 1})
     assert not query({'value': {'asd': 1}})
@@ -27,7 +27,7 @@ def test_path_only():
 
 
 def test_path_and():
-    query = Query()['value'] & (Query()['value'] == 5)
+    query = Query()['value'].exists() & (Query()['value'] == 5)
     assert query({'value': 5})
     assert not query({'value': 10})
     assert not query({'something': 1})
@@ -93,8 +93,8 @@ def test_ge():
 
 def test_or():
     query = (
-        (Query().val1 == 1) |
-        (Query().val2 == 2)
+            (Query().val1 == 1) |
+            (Query().val2 == 2)
     )
     assert query({'val1': 1})
     assert query({'val2': 2})
@@ -105,8 +105,8 @@ def test_or():
 
 def test_and():
     query = (
-        (Query().val1 == 1) &
-        (Query().val2 == 2)
+            (Query().val1 == 1) &
+            (Query().val2 == 2)
     )
     assert query({'val1': 1, 'val2': 2})
     assert not query({'val1': 1})
@@ -122,8 +122,8 @@ def test_not():
     assert hash(query)
 
     query = (
-        (~ (Query().val1 == 1)) &
-        (Query().val2 == 2)
+            (~ (Query().val1 == 1)) &
+            (Query().val2 == 2)
     )
     assert query({'val1': '', 'val2': 2})
     assert query({'val2': 2})
@@ -155,6 +155,7 @@ def test_regex():
     assert query({'val': 'ab3'})
     assert not query({'val': 'abc'})
     assert not query({'val': ''})
+    assert not query({'val': True})
     assert not query({'': None})
     assert hash(query)
 
@@ -162,6 +163,7 @@ def test_regex():
     assert query({'val': 'john'})
     assert query({'val': 'xJohNx'})
     assert not query({'val': 'JOH'})
+    assert not query({'val': 12})
     assert not query({'': None})
     assert hash(query)
 
@@ -370,9 +372,9 @@ def test_subclass():
     class MyQueryClass(Query):
         def equal_double(self, rhs):
             return self._generate_test(
-            lambda value: value == rhs*2,
-            ('equal_double', self._path, rhs)
-        )
+                lambda value: value == rhs * 2,
+                ('equal_double', self._path, rhs)
+            )
 
     query = MyQueryClass().val.equal_double('42')
 

@@ -8,10 +8,8 @@ TinyDB.
 Why Use TinyDB?
 ---------------
 
-- **tiny:** The current source code has 1200 lines of code (with about 40%
-  documentation) and 1000 lines tests. For comparison: Buzhug_ has about 2500
-  lines of code (w/o tests), CodernityDB_ has about 7000 lines of code
-  (w/o tests).
+- **tiny:** The current source code has 1800 lines of code (with about 40%
+  documentation) and 1600 lines tests.
 
 - **document oriented:** Like MongoDB_, you can store any document
   (represented as ``dict``) in TinyDB.
@@ -20,11 +18,11 @@ Why Use TinyDB?
   fun to use by providing a simple and clean API.
 
 - **written in pure Python:** TinyDB neither needs an external server (as
-  e.g. `PyMongo <https://api.mongodb.org/python/current/>`_) nor any dependencies
+  e.g. `PyMongo <https://pymongo.readthedocs.io/en/stable/>`_) nor any dependencies
   from PyPI.
 
-- **works on Python 2.6 + 2.7 and 3.3 – 3.7 and PyPy:** TinyDB works on all
-  modern versions of Python and PyPy.
+- **works on Python 3.5+ and PyPy:** TinyDB works on all modern versions of Python
+  and PyPy.
 
 - **powerfully extensible:** You can easily extend TinyDB by writing new
   storages or modify the behaviour of storages with Middlewares.
@@ -41,7 +39,7 @@ Why **Not** Use TinyDB?
 - You need **advanced features** like:
     - access from multiple processes or threads,
     - creating indexes for tables,
-    - a HTTP server,
+    - an HTTP server,
     - managing relationships between tables or similar,
     - `ACID guarantees <https://en.wikipedia.org/wiki/ACID>`_.
 - You are really concerned about **performance** and need a high speed

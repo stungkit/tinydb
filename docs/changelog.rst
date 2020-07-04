@@ -10,7 +10,93 @@ see `semver.org <http://semver.org/>`_
 unreleased
 ^^^^^^^^^^
 
-- *Nothing yet*
+- Feature: Add support for specifiying document IDs during insertion
+  (see `issue 303 <https://github.com/msiemens/tinydb/issues/303>`_)
+
+v4.1.1 (2020-05-08)
+^^^^^^^^^^^^^^^^^^^
+
+- Fix: Don't install dev-dependencies when installing from PyPI (see
+  `issue 315 <https://github.com/msiemens/tinydb/issues/315>`_)
+
+v4.1.0 (2020-05-07)
+^^^^^^^^^^^^^^^^^^^
+
+- Feature: Add a no-op query ``Query().noop()`` (see
+  `issue 313 <https://github.com/msiemens/tinydb/issues/313>`_)
+- Feature: Add a ``access_mode`` flag to ``JSONStorage`` to allow opening
+  files read-only (see `issue 297 <https://github.com/msiemens/tinydb/issues/297>`_)
+- Fix: Don't dropping the first document that's being inserted when inserting
+  data on an existing database (see `issue 314
+  <https://github.com/msiemens/tinydb/issues/314>`_)
+
+v4.0.0 (2020-05-02)
+^^^^^^^^^^^^^^^^^^^
+
+:ref:`Upgrade Notes <upgrade_v4_0>`
+
+Breaking Changes
+----------------
+
+- Python 2 support has been removed, see `issue 284
+  <https://github.com/msiemens/tinydb/issues/284>`_
+  for background
+- API changes:
+    - Removed classes: ``DataProxy``, ``StorageProxy``
+    - Attributes removed from ``TinyDB``: ``DEFAULT_TABLE``,
+      ``DEFAULT_TABLE_KWARGS``, ``DEFAULT_STORAGE``, removed in favor of
+      customizing ``TinyDB``'s behavior by subclassing it and overloading
+      ``__init__(...)`` and ``table(...)``
+    - ``TinyDB.contains(...)``'s ``doc_ids`` parameter has been renamed to
+      ``doc_id`` and now only takes a single document ID
+    - ``TinyDB.purge_tables(...)`` has been renamed to ``TinyDB.drop_tables(...)``
+    - ``TinyDB.purge_table(...)`` has been renamed to ``TinyDB.drop_table(...)``
+    - ``TinyDB.write_back(...)`` has been removed
+    - ``TinyDB.process_elements(...)`` has been removed
+    - ``Table.purge()`` has been renamed to ``Table.trunacte()``
+    - Evaluating an empty ``Query()`` without any test operators will now result
+      in an exception, use ``Query().noop()`` (introduced in v4.1.0) instead
+- ``ujson`` support has been removed, see `issue 263
+  <https://github.com/msiemens/tinydb/issues/263>`_ and `issue 306
+  <https://github.com/msiemens/tinydb/issues/306>`_ for background
+- The deprecated Element ID API has been removed (e.g. using the ``Element``
+  class or ``eids`` parameter) in favor the Document API, see
+  `pull request 158 <https://github.com/msiemens/tinydb/pull/158>`_ for details
+  on the replacement
+
+Improvements
+------------
+
+- TinyDB's internal architecture has been reworked to be more simple and
+  streamlined in order to make it easier to customize TinyDB's behavior
+- With the new architecture, TinyDB performance will improve for many
+  applications
+
+Bugfixes
+--------
+
+- Don't break the tests when ``ujson`` is installed (see `issue 262
+  <https://github.com/msiemens/tinydb/issues/262>`_)
+- Fix performance when reading data (see `issue 250
+  <https://github.com/msiemens/tinydb/issues/250>`_)
+- Fix inconsistent purge function names (see `issue 103
+  <https://github.com/msiemens/tinydb/issues/103>`_)
+
+v3.15.1 (2019-10-26)
+^^^^^^^^^^^^^^^^^^^^
+
+- Internal change: fix missing values handling for ``LRUCache``
+
+v3.15.0 (2019-10-12)
+^^^^^^^^^^^^^^^^^^^^
+
+- Feature: allow setting the parameters of TinyDB's default table
+  (see `issue 278 <https://github.com/msiemens/tinydb/issues/278>`_)
+
+v3.14.2 (2019-09-13)
+^^^^^^^^^^^^^^^^^^^^
+
+- Internal change: support correct iteration for ``LRUCache`` objects
 
 v3.14.1 (2019-07-03)
 ^^^^^^^^^^^^^^^^^^^^
@@ -22,7 +108,7 @@ v3.14.0 (2019-06-18)
 ^^^^^^^^^^^^^^^^^^^^
 
 - Change: support for ``ujson`` is now deprecated
-  (see `issue 258 <https://github.com/msiemens/tinydb/issues/263>`_)
+  (see `issue 263 <https://github.com/msiemens/tinydb/issues/263>`_)
 
 v3.13.0 (2019-03-16)
 ^^^^^^^^^^^^^^^^^^^^

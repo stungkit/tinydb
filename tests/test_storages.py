@@ -1,24 +1,15 @@
-# -*- coding: utf-8 -*-
-
 import os
 import random
 import tempfile
 import json
 
-import pytest
+import pytest  # type: ignore
 
 from tinydb import TinyDB, where
-from tinydb.database import Document
 from tinydb.storages import JSONStorage, MemoryStorage, Storage, touch
+from tinydb.table import Document
 
 random.seed()
-
-try:
-    import ujson as json
-except ImportError:
-    HAS_UJSON = False
-else:
-    HAS_UJSON = True
 
 doc = {'none': [None, None], 'int': 42, 'float': 3.1415899999999999,
        'list': ['LITE', 'RES_ACID', 'SUS_DEXT'],
@@ -37,7 +28,6 @@ def test_json(tmpdir):
     storage.close()
 
 
-@pytest.mark.skipif(HAS_UJSON, reason="not compatible with ujson")
 def test_json_kwargs(tmpdir):
     db_file = tmpdir.join('test.db')
     db = TinyDB(str(db_file), sort_keys=True, indent=4, separators=(',', ': '))
@@ -86,6 +76,24 @@ def test_json_readwrite(tmpdir):
     db.remove(where('name') == 'A short one')
     assert get('A short one') is None
 
+    db.close()
+
+
+def test_json_read(tmpdir):
+    r"""Open a database only for reading"""
+    path = str(tmpdir.join('test.db'))
+    with pytest.raises(FileNotFoundError):
+        db = TinyDB(path, storage=JSONStorage, access_mode='r')
+    # Create small database
+    db = TinyDB(path, storage=JSONStorage)
+    db.insert({'b': 1})
+    db.insert({'a': 1})
+    db.close()
+    # Access in read mode
+    db = TinyDB(path, storage=JSONStorage, access_mode='r')
+    assert db.get(where('a') == 1) == {'a': 1}  # reading is fine
+    with pytest.raises(IOError):
+        db.insert({'c': 1})  # writing is not
     db.close()
 
 
@@ -148,7 +156,7 @@ def test_custom():
 
 
 def test_read_once():
-    count = [0]
+    count = 0
 
     # noinspection PyAbstractClass
     class MyStorage(Storage):
@@ -156,27 +164,32 @@ def test_read_once():
             self.memory = None
 
         def read(self):
-            count[0] += 1
+            nonlocal count
+            count += 1
+
             return self.memory
 
         def write(self, data):
             self.memory = data
 
-    def reset_counter(expected=1):
-        assert count[0] == expected
-        count[0] = 0
-
     with TinyDB(storage=MyStorage) as db:
-        reset_counter()
+        assert count == 0
+
+        db.table(db.default_table_name)
+
+        assert count == 0
 
         db.all()
-        reset_counter()
+
+        assert count == 1
 
         db.insert({'foo': 'bar'})
-        reset_counter()
+
+        assert count == 3  # One for getting the next ID, one for the insert
 
         db.all()
-        reset_counter()
+
+        assert count == 4
 
 
 def test_custom_with_exception():
@@ -250,7 +263,8 @@ def test_encoding(tmpdir):
     japanese_doc = {"Test": u"こんにちは世界"}
 
     path = str(tmpdir.join('test.db'))
-    jap_storage = JSONStorage(path, encoding="cp936")  # cp936 is used for japanese encodings
+    # cp936 is used for japanese encodings
+    jap_storage = JSONStorage(path, encoding="cp936")
     jap_storage.write(japanese_doc)
 
     try:
@@ -259,7 +273,8 @@ def test_encoding(tmpdir):
         exception = ValueError
 
     with pytest.raises(exception):
-        eng_storage = JSONStorage(path, encoding="cp037")  # cp037 is used for english encodings
+        # cp037 is used for english encodings
+        eng_storage = JSONStorage(path, encoding="cp037")
         eng_storage.read()
 
     jap_storage = JSONStorage(path, encoding="cp936")

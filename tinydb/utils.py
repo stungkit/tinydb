@@ -2,137 +2,137 @@
 Utility functions.
 """
 
-import warnings
-from collections import OrderedDict
-from contextlib import contextmanager
+from collections import OrderedDict, abc
+from typing import List, Iterator, TypeVar, Generic, Union, Optional
 
-# Python 2/3 independant dict iteration
-iteritems = getattr(dict, 'iteritems', dict.items)
-itervalues = getattr(dict, 'itervalues', dict.values)
+K = TypeVar('K')
+V = TypeVar('V')
+D = TypeVar('D')
+
+__all__ = ('LRUCache', 'freeze')
 
 
-class LRUCache:
-    # @param capacity, an integer
+class LRUCache(abc.MutableMapping, Generic[K, V]):
+    """
+    A least-recently used (LRU) cache with a fixed cache size.
+
+    This class acts as a dictionary but has a limited size. If the number of
+    entries in the cache exeeds the cache size, the leat-recently accessed
+    entry will be discareded.
+
+    This is implemented using an ``OrderedDict``. On every access the accessed
+    entry is moved to the front by re-inserting it into the ``OrderedDict``.
+    When adding an entry and the cache size is exceeded, the last entry will
+    be discareded.
+    """
+
     def __init__(self, capacity=None):
         self.capacity = capacity
-        self.__cache = OrderedDict()
+        self.cache = OrderedDict()  # type: OrderedDict[K, V]
 
     @property
-    def lru(self):
-        return list(self.__cache.keys())
+    def lru(self) -> List[K]:
+        return list(self.cache.keys())
 
     @property
-    def length(self):
-        return len(self.__cache)
+    def length(self) -> int:
+        return len(self.cache)
 
-    def clear(self):
-        self.__cache.clear()
+    def clear(self) -> None:
+        self.cache.clear()
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.length
 
-    def __contains__(self, item):
-        return item in self.__cache
+    def __contains__(self, key: object) -> bool:
+        return key in self.cache
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: K, value: V) -> None:
         self.set(key, value)
 
-    def __delitem__(self, key):
-        del self.__cache[key]
+    def __delitem__(self, key: K) -> None:
+        del self.cache[key]
 
-    def __getitem__(self, key):
-        return self.get(key)
+    def __getitem__(self, key) -> V:
+        value = self.get(key)
+        if value is None:
+            raise KeyError(key)
 
-    def get(self, key, default=None):
-        value = self.__cache.get(key)
-        if value:
-            del self.__cache[key]
-            self.__cache[key] = value
+        return value
+
+    def __iter__(self) -> Iterator[K]:
+        return iter(self.cache)
+
+    def get(self, key: K, default: D = None) -> Optional[Union[V, D]]:
+        value = self.cache.get(key)
+
+        if value is not None:
+            # Move the entry to the front by re-inserting it
+            del self.cache[key]
+            self.cache[key] = value
+
             return value
+
         return default
 
-    def set(self, key, value):
-        if self.__cache.get(key):
-            del self.__cache[key]
-            self.__cache[key] = value
+    def set(self, key: K, value: V):
+        if self.cache.get(key):
+            # Move the entry to the front by re-inserting it
+            del self.cache[key]
+            self.cache[key] = value
         else:
-            self.__cache[key] = value
+            self.cache[key] = value
+
             # Check, if the cache is full and we have to remove old items
             # If the queue is of unlimited size, self.capacity is NaN and
             # x > NaN is always False in Python and the cache won't be cleared.
             if self.capacity is not None and self.length > self.capacity:
-                self.__cache.popitem(last=False)
-
-
-# Source: https://github.com/PythonCharmers/python-future/blob/466bfb2dfa36d865285dc31fe2b0c0a53ff0f181/future/utils/__init__.py#L102-L134
-def with_metaclass(meta, *bases):
-    """
-    Function from jinja2/_compat.py. License: BSD.
-
-    Use it like this::
-
-        class BaseForm(object):
-            pass
-
-        class FormType(type):
-            pass
-
-        class Form(with_metaclass(FormType, BaseForm)):
-            pass
-
-    This requires a bit of explanation: the basic idea is to make a
-    dummy metaclass for one level of class instantiation that replaces
-    itself with the actual metaclass.  Because of internal type checks
-    we also need to make sure that we downgrade the custom metaclass
-    for one level to something closer to type (that's why __call__ and
-    __init__ comes back from type etc.).
-
-    This has the advantage over six.with_metaclass of not introducing
-    dummy classes into the final MRO.
-    """
-
-    class Metaclass(meta):
-        __call__ = type.__call__
-        __init__ = type.__init__
-
-        def __new__(cls, name, this_bases, d):
-            if this_bases is None:
-                return type.__new__(cls, name, (), d)
-            return meta(name, bases, d)
-
-    return Metaclass('temporary_class', None, {})
-
-
-@contextmanager
-def catch_warning(warning_cls):
-    with warnings.catch_warnings():
-        warnings.filterwarnings('error', category=warning_cls)
-
-        yield
+                self.cache.popitem(last=False)
 
 
 class FrozenDict(dict):
+    """
+    An immutable dictoinary.
+
+    This is used to generate stable hashes for queries that contain dicts.
+    Usually, Python dicts are not hashable because they are mutable. This
+    class removes the mutability and implements the ``__hash__`` method.
+    """
+
     def __hash__(self):
+        # Calculate the has by hashing a tuple of all dict items
         return hash(tuple(sorted(self.items())))
 
     def _immutable(self, *args, **kws):
         raise TypeError('object is immutable')
 
+    # Disable write access to the dict
     __setitem__ = _immutable
     __delitem__ = _immutable
     clear = _immutable
-    update = _immutable
     setdefault = _immutable
-    pop = _immutable
     popitem = _immutable
+
+    def update(self, e=None, **f):
+        raise TypeError('object is immutable')
+
+    def pop(self, k, d=None):
+        raise TypeError('object is immutable')
 
 
 def freeze(obj):
+    """
+    Freeze an object by making it immutable and thus hashable.
+    """
     if isinstance(obj, dict):
+        # Transform dicts into ``FrozenDict``s
         return FrozenDict((k, freeze(v)) for k, v in obj.items())
     elif isinstance(obj, list):
+        # Transform lists into tuples
         return tuple(freeze(el) for el in obj)
     elif isinstance(obj, set):
+        # Transform sets into ``frozenset``s
         return frozenset(obj)
     else:
+        # Don't handle all other objects
         return obj

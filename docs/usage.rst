@@ -233,13 +233,20 @@ your database.
 Inserting data
 ..............
 
-As already described you can insert an document using ``db.insert(...)``.
+As already described you can insert a document using ``db.insert(...)``.
 In case you want to insert multiple documents, you can use ``db.insert_multiple(...)``:
 
 >>> db.insert_multiple([
         {'name': 'John', 'age': 22},
         {'name': 'John', 'age': 37}])
 >>> db.insert_multiple({'int': 1, 'value': i} for i in range(2))
+
+Also in some cases it may be useful to specify the document ID yourself when
+inserting data. You can do that by using the :class:`~tinydb.table.Document`
+class:
+
+>>> db.insert(Document({'name': 'John', 'age': 22}, doc_id=12))
+12
 
 Updating data
 .............
@@ -250,7 +257,7 @@ can leave out the ``query`` argument:
 >>> db.update({'foo': 'bar'})
 
 When passing a dict to ``db.update(fields, query)``, it only allows you to
-update an document by adding or overwriting its values. But sometimes you may
+update a document by adding or overwriting its values. But sometimes you may
 need to e.g. remove one field or increment its value. In that case you can
 pass a function instead of ``fields``:
 
@@ -339,27 +346,6 @@ In a similar manner you can look up the number of documents matching a query:
 >>> db.count(User.name == 'John')
 2
 
-Replacing data
-..............
-
-Another occasionally useful operation is to replace a list of documents. If you
-have a list of documents with IDs (see document_ids_), you can pass them to
-``db.write_back(list)``:
-
->>> docs = db.search(User.name == 'John')
-[{name: 'John', age: 12}, {name: 'John', age: 44}]
->>> for doc in docs:
-...     doc['name'] = 'Jane'
->>> db.write_back(docs)  # Will update the documents we retrieved
->>> docs = db.search(User.name == 'John')
-[]
->>> docs = db.search(User.name == 'Jane')
-[{name: 'Jane', age: 12}, {name: 'Jane', age: 44}]
-
-Alternatively you can pass a list of documents along with a list of document IDs
-to achieve the same goal. In this case, the length of the document list and the
-ID list has to be equal.
-
 Recap
 ^^^^^
 
@@ -373,8 +359,6 @@ Let's summarize the ways to handle data:
 | **Updating data**                                                                             |
 +-------------------------------+---------------------------------------------------------------+
 | ``db.update(operation, ...)`` | Update all matching documents with a special operation        |
-+-------------------------------+---------------------------------------------------------------+
-| ``db.write_back(docs)``       | Replace all documents with the updated versions               |
 +-------------------------------+---------------------------------------------------------------+
 | **Retrieving data**                                                                           |
 +-------------------------------+---------------------------------------------------------------+
@@ -398,7 +382,7 @@ Using Document IDs
 ------------------
 
 Internally TinyDB associates an ID with every document you insert. It's returned
-after inserting an document:
+after inserting a document:
 
 >>> db.insert({'name': 'John', 'age': 22})
 3
@@ -433,13 +417,13 @@ Recap
 Let's sum up the way TinyDB supports working with IDs:
 
 +-------------------------------------+------------------------------------------------------------+
-| **Getting an document's ID**                                                                     |
+| **Getting a document's ID**                                                                      |
 +-------------------------------------+------------------------------------------------------------+
 | ``db.insert(...)``                  | Returns the inserted document's ID                         |
 +-------------------------------------+------------------------------------------------------------+
 | ``db.insert_multiple(...)``         | Returns the inserted documents' ID                         |
 +-------------------------------------+------------------------------------------------------------+
-| ``document.doc_id``                 | Get the ID of an document fetched from the db              |
+| ``document.doc_id``                 | Get the ID of a document fetched from the db               |
 +-------------------------------------+------------------------------------------------------------+
 | **Working with IDs**                                                                             |
 +-------------------------------------+------------------------------------------------------------+
@@ -470,11 +454,11 @@ the ``TinyDB`` class. To create and use a table, use ``db.table(name)``.
 
 To remove a table from a database, use:
 
->>> db.purge_table('table_name')
+>>> db.drop_table('table_name')
 
 If on the other hand you want to remove all tables, use the counterpart:
 
->>> db.purge_tables()
+>>> db.drop_tables()
 
 Finally, you can get a list with the names of all tables in your database:
 
@@ -497,18 +481,36 @@ variable to modify the default table name for all instances:
 >>> #2: for all instances
 >>> TinyDB.DEFAULT_TABLE = 'my-default'
 
+You also can modify the keyword arguments that are passed to the default
+table by setting ``TinyDB.DEFAULT_TABLE_KWARGS``. For example, you can
+disable the query cache for the default table by setting like this:
+
+>>> TinyDB.DEFAULT_TABLE_KWARGS = {'cache_size': 0}
+
 .. _query_caching:
 
 Query Caching
 .............
 
-TinyDB caches query result for performance. You can optimize the query cache
-size by passing the ``cache_size`` to the ``table(...)`` function:
+TinyDB caches query result for performance. That way re-running a query won't
+have to read the data from the storage as long as the database hasn't been
+modified. You can optimize the query cache size by passing the ``cache_size``
+to the ``table(...)`` function:
 
 >>> table = db.table('table_name', cache_size=30)
 
 .. hint:: You can set ``cache_size`` to ``None`` to make the cache unlimited in
    size. Also, you can set ``cache_size`` to 0 to disable it.
+
+.. hint:: The TinyDB query cache doesn't check if the underlying storage
+   that the database uses has been modified by an external process. In this
+   case the query cache may return outdated results. To clear the cache and
+   read data from the storage again you can use ``db.clear_cache()``.
+
+.. hint:: When using an unlimited cache size and ``test()`` queries, TinyDB
+   will store a reference to the test function. As a result of that behavior
+   long-running applications that use ``lambda`` functions as a test function
+   may experience memory leaks.
 
 Storage & Middleware
 --------------------

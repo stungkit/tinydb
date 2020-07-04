@@ -13,7 +13,7 @@ To install TinyDB from PyPI, run::
 You can also grab the latest development version from GitHub_. After downloading
 and unpacking it, you can install it using::
 
-    $ python setup.py install
+    $ pip install .
 
 
 Basic Usage
@@ -71,7 +71,7 @@ In the same manner you can also remove documents:
 
 And of course you can throw away all data to start with an empty database:
 
->>> db.purge()
+>>> db.truncate()
 >>> db.all()
 []
 
@@ -84,7 +84,7 @@ Before we dive deeper, let's recapitulate the basics:
 +-------------------------------+---------------------------------------------------------------+
 | **Inserting**                                                                                 |
 +-------------------------------+---------------------------------------------------------------+
-| ``db.insert(...)``            | Insert an document                                            |
+| ``db.insert(...)``            | Insert a document                                             |
 +-------------------------------+---------------------------------------------------------------+
 | **Getting data**                                                                              |
 +-------------------------------+---------------------------------------------------------------+
@@ -102,14 +102,14 @@ Before we dive deeper, let's recapitulate the basics:
 +-------------------------------+---------------------------------------------------------------+
 | ``db.remove(query)``          | Remove all documents matching the query                       |
 +-------------------------------+---------------------------------------------------------------+
-| ``db.purge()``                | Purge all documents                                           |
+| ``db.truncate()``             | Remove all documents                                          |
 +-------------------------------+---------------------------------------------------------------+
 | **Querying**                                                                                  |
 +-------------------------------+---------------------------------------------------------------+
 | ``Query()``                   | Create a new query object                                     |
 +-------------------------------+---------------------------------------------------------------+
 | ``Query().field == 2``        | Match any document that has a key ``field`` with value        |
-|                               | ``== 2`` (also possible: ``!=`` ``>`` ``>=`` ``<`` ``<=``)    |
+|                               | ``== 2`` (also possible: ``!=``, ``>``, ``>=``, ``<``, ``<=``)|
 +-------------------------------+---------------------------------------------------------------+
 
 .. References
